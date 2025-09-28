@@ -5,7 +5,6 @@ on:
     branches: [ "dev" ]
   pull_request:
     branches: [ "dev" ]
-  
 
 env:
   REGISTRY: docker.io
@@ -63,6 +62,7 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
       - name: Deploy to VM via SSH (password auth)
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -73,7 +73,7 @@ jobs:
             sudo apt-get update -y
             if ! command -v docker &> /dev/null
             then
-              sudo apt-get install docker.io
+              sudo apt-get install -y docker.io
               sudo systemctl enable docker
               sudo systemctl start docker
               sudo usermod -aG docker $USER
@@ -81,7 +81,19 @@ jobs:
             else
               echo "✅ Docker already installed."
             fi
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }} --address=0.0.0.0 
+            
+            sudo systemctl start docker
+            
+            if groups $USER | grep -q docker; then
+              echo "✅ User is in docker group, using docker directly"
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
+              docker stop myapp || true
+              docker rm myapp || true
+              docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
+            else
+              echo "⚠️  User not in docker group, using sudo"
+              sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
+              sudo docker stop myapp || true
+              sudo docker rm myapp || true
+              sudo docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
+            fi
