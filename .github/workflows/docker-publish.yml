@@ -87,5 +87,5 @@ jobs:
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
             sudo docker stop myapp || true
             sudo docker rm myapp || true
-            sudo docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+            sudo docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
             
