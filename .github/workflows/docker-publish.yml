@@ -5,6 +5,7 @@ on:
     branches: [ "dev" ]
   pull_request:
     branches: [ "dev" ]
+  
 
 env:
   REGISTRY: docker.io
@@ -62,3 +63,25 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      - name: Deploy to VM via SSH (password auth)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            sudo apt-get update -y
+            if ! command -v docker &> /dev/null
+            then
+              sudo apt-get install docker.io
+              sudo systemctl enable docker
+              sudo systemctl start docker
+              sudo usermod -aG docker $USER
+              echo "✅ Docker installed and user added to docker group."
+            else
+              echo "✅ Docker already installed."
+            fi
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+            docker stop myapp || true
+            docker rm myapp || true
+            docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }} --address=0.0.0.0 
