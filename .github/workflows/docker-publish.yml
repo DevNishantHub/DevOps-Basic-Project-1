@@ -84,16 +84,8 @@ jobs:
             
             sudo systemctl start docker
             
-            if groups $USER | grep -q docker; then
-              echo "✅ User is in docker group, using docker directly"
-              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
-              docker stop myapp || true
-              docker rm myapp || true
-              docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
-            else
-              echo "⚠️  User not in docker group, using sudo"
-              sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
-              sudo docker stop myapp || true
-              sudo docker rm myapp || true
-              sudo docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
-            fi
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:dev
+            sudo docker stop myapp || true
+            sudo docker rm myapp || true
+            sudo docker run -d --restart=always --name myapp -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+            
